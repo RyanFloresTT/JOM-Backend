@@ -15,24 +15,56 @@ func getProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
-	domain := "http://localhost:4242"
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000") // or "*"
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var checkoutItems checkoutRequest
+	err := json.NewDecoder(r.Body).Decode(&checkoutItems)
+	if err != nil {
+		log.Printf("Failed to decode request body: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	var lineItems []*stripe.CheckoutSessionLineItemParams
+	for _, item := range checkoutItems.Items {
+		lineItems = append(lineItems, &stripe.CheckoutSessionLineItemParams{
+			Price:    stripe.String(item.PriceID),
+			Quantity: stripe.Int64(int64(item.Quantity)),
+		})
+	}
+
 	params := &stripe.CheckoutSessionParams{
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			&stripe.CheckoutSessionLineItemParams{
-				Price:    stripe.String("price_1Q0torP4AZbXqL5ZqKMsKdSI"),
-				Quantity: stripe.Int64(1),
-			},
-		},
+		LineItems:  lineItems,
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(domain + "?success=true"),
-		CancelURL:  stripe.String(domain + "?canceled=true"),
+		SuccessURL: stripe.String("http://localhost:3000/success"),
+		CancelURL:  stripe.String("http://localhost:3000/canceled"),
 	}
 
 	s, err := session.New(params)
-
 	if err != nil {
 		log.Printf("session.New: %v", err)
+		http.Error(w, "Failed to create checkout session", http.StatusInternalServerError)
+		return
 	}
 
-	http.Redirect(w, r, s.URL, http.StatusSeeOther)
+	json.NewEncoder(w).Encode(map[string]string{"url": s.URL})
+}
+
+type checkoutRequest struct {
+	Items []struct {
+		Quantity int    `json:"quantity"`
+		PriceID  string `json:"priceID"`
+	} `json:"items"`
 }
