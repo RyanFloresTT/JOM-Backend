@@ -9,6 +9,9 @@ import (
 )
 
 func main() {
+	LoadProducts()
+	UpdateProductPrices()
+
 	mux := http.NewServeMux()
 
 	stripe.Key = getSecrets().StripeApi
@@ -19,12 +22,12 @@ func main() {
 	mux.HandleFunc("/api/products", getProducts)
 
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
 	}).Handler(mux)
 
 	addr := "localhost:4242"
 
-	log.Printf("Listening on %s", addr)
+	log.Printf("Listening on http://%s", addr)
 	log.Fatal(http.ListenAndServe(addr, handler))
 }
