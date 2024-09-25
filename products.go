@@ -44,7 +44,7 @@ func SaveProducts() {
 }
 
 func UpdateProductPrices() {
-	stripe.Key = getSecrets().StripeApi
+	stripe.Key = os.Getenv("StripeAPIKey")
 	for i, product := range products {
 		p, err := price.Get(product.PriceID, nil)
 		if err != nil {

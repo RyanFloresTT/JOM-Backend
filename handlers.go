@@ -60,7 +60,7 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"url": s.URL, "succeed": ""})
+	json.NewEncoder(w).Encode(map[string]string{"url": s.URL})
 }
 
 type checkoutRequest struct {
