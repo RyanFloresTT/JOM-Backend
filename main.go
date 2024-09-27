@@ -30,10 +30,16 @@ func main() {
 	r.Use(chimiddleware.Logger)
 	r.Use(chimiddleware.Recoverer)
 
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"https://localhost:3000", "http://localhost:3000"},
+		AllowCredentials: true,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+	}).Handler(r)
+
 	stripe.Key = os.Getenv("StripeAPIKey")
 
 	r.Group(func(public chi.Router) {
-		public.Use(middleware.CORS)
 		public.Get("/api/products", getProducts)
 		public.Post("/create-checkout-session", createCheckoutSession)
 		public.Post("/signup", controllers.Signup)
@@ -43,15 +49,8 @@ func main() {
 
 	r.Group(func(protected chi.Router) {
 		protected.Use(middleware.RequireAuth)
-		protected.Use(middleware.CORS)
 		protected.Get("/validate", controllers.Validate)
 	})
-
-	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowCredentials: true,
-	}).Handler(r)
-
 	addr := "localhost:4242"
 
 	log.Printf("Listening on http://%s", addr)

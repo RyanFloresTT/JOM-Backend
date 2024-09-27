@@ -88,7 +88,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{
 		"cookieName":  "Authorization",
 		"cookieValue": tokenString,
-		"expires":     time.Now().Add(time.Hour * 24 * 30).Format(time.RFC3339), // Format for easy parsing
+		"expires":     time.Now().Add(time.Hour * 24 * 30).Format(time.RFC3339),
 	}
 
 	// Set content type and respond with the cookie details

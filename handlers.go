@@ -49,8 +49,8 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	params := &stripe.CheckoutSessionParams{
 		LineItems:  lineItems,
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String("https://localhost:7269/cart?success=true"),
-		CancelURL:  stripe.String("https://localhost:7269/cart?canceled=true"),
+		SuccessURL: stripe.String("http://localhost:3000/cart?success=true"),
+		CancelURL:  stripe.String("http://localhost:3000/cart?canceled=true"),
 	}
 
 	s, err := session.New(params)

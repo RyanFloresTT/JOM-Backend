@@ -17,7 +17,8 @@ func RequireAuth(next http.Handler) http.Handler {
 		// get cookie off req
 		tokenString, err := r.Cookie("Authorization")
 		if err != nil {
-			http.Error(w, "", http.StatusUnauthorized)
+			fmt.Println("Error getting cookie: ", err)
+			http.Error(w, "Error Getting Cookie", http.StatusUnauthorized)
 			return
 		}
 
@@ -37,12 +38,12 @@ func RequireAuth(next http.Handler) http.Handler {
 		// check expiration
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			http.Error(w, "", http.StatusUnauthorized)
+			http.Error(w, "Error Getting Claims", http.StatusUnauthorized)
 			return
 		}
 
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
-			http.Error(w, "", http.StatusUnauthorized)
+			http.Error(w, "Cookie Expired", http.StatusUnauthorized)
 			return
 		}
 
@@ -51,7 +52,7 @@ func RequireAuth(next http.Handler) http.Handler {
 		initializers.DB.First(&user, claims["sub"])
 
 		if user.ID == 0 {
-			http.Error(w, "", http.StatusUnauthorized)
+			http.Error(w, "User Not Found", http.StatusUnauthorized)
 			return
 		}
 
