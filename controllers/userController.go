@@ -44,7 +44,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	// get email and pass from context
 	var body struct {
 		Email    string `json:"Email"`
 		Password string `json:"Password"`
@@ -56,7 +55,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Look up user
 	var user models.User
 	initializers.DB.First(&user, "email=?", body.Email)
 
@@ -65,14 +63,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Compare pass hashes
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
 	if err != nil {
 		http.Error(w, "Invalid Email or Password", http.StatusBadRequest)
 		return
 	}
 
-	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": user.ID,
 		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
@@ -84,17 +80,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Instead of setting the cookie, send the details in a JSON response
-	response := map[string]string{
-		"cookieName":  "Authorization",
-		"cookieValue": tokenString,
-		"expires":     time.Now().Add(time.Hour * 24 * 30).Format(time.RFC3339),
+	cookie := http.Cookie{
+		Name:     "Authorization",
+		Value:    tokenString,
+		Expires:  time.Now().Add(time.Hour * 24 * 30),
+		HttpOnly: true,
+		Secure:   false,
+		Path:     "/",
 	}
 
-	// Set content type and respond with the cookie details
+	http.SetCookie(w, &cookie)
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Login successful",
+	})
+
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
