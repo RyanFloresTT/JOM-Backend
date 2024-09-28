@@ -39,16 +39,25 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var lineItems []*stripe.CheckoutSessionLineItemParams
+	var sessionMode stripe.CheckoutSessionMode
+	sessionMode = stripe.CheckoutSessionModePayment
+
 	for _, item := range checkoutItems.Items {
-		lineItems = append(lineItems, &stripe.CheckoutSessionLineItemParams{
+		lineItem := &stripe.CheckoutSessionLineItemParams{
 			Price:    stripe.String(item.PriceID),
 			Quantity: stripe.Int64(int64(item.Quantity)),
-		})
+		}
+
+		if item.Subscription {
+			sessionMode = stripe.CheckoutSessionModeSubscription
+		}
+
+		lineItems = append(lineItems, lineItem)
 	}
 
 	params := &stripe.CheckoutSessionParams{
 		LineItems:  lineItems,
-		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
+		Mode:       stripe.String(string(sessionMode)),
 		SuccessURL: stripe.String("http://localhost:3000/cart?success=true"),
 		CancelURL:  stripe.String("http://localhost:3000/cart?canceled=true"),
 	}
@@ -63,9 +72,12 @@ func createCheckoutSession(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"url": s.URL})
 }
 
+type checkoutItem struct {
+	PriceID      string `json:"priceID"`
+	Quantity     int    `json:"quantity"`
+	Subscription bool   `json:"subscription"`
+}
+
 type checkoutRequest struct {
-	Items []struct {
-		Quantity int    `json:"quantity"`
-		PriceID  string `json:"priceID"`
-	} `json:"items"`
+	Items []checkoutItem `json:"items"`
 }

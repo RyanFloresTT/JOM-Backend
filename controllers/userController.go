@@ -13,7 +13,6 @@ import (
 )
 
 func Signup(w http.ResponseWriter, r *http.Request) {
-	// get email and pass from context
 	var body struct {
 		Email    string `json:"Email"`
 		Password string `json:"Password"`
@@ -25,18 +24,24 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var existingUser models.User
+	initializers.DB.Where("email = ?", body.Email).First(&existingUser)
+	if existingUser.ID != 0 {
+		http.Error(w, "User with this email already exists", http.StatusConflict)
+		return
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
 	if err != nil {
-		http.Error(w, "Failed to hash password", http.StatusBadRequest)
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 
 	user := models.User{Email: body.Email, Password: string(hash)}
-
 	result := initializers.DB.Create(&user)
 
 	if result.Error != nil {
-		http.Error(w, "Failed to create user", http.StatusBadRequest)
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
